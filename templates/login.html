@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#081826">
+  <title>BluePrint — Log in</title>
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%230c2440"/><rect x="1.5" y="1.5" width="13" height="13" fill="none" stroke="%2386b8d8" stroke-width="0.6"/><path d="M3.5 13V3h6l3.5 3.5V13z" fill="none" stroke="%23ffd166" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.5 3v3.5h3.5" fill="none" stroke="%23ffd166" stroke-width="1.2" stroke-linejoin="round"/></svg>'>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <main class="login-page">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20V4h9l7 7v9z"/>
+            <path d="M13 4v7h7"/>
+          </svg>
+        </div>
+        <span class="brand-name">BluePrint</span>
+      </div>
+
+      <p class="login-caption">Restricted sheet &middot; enter PIN to access</p>
+
+      <form method="POST" action="{{ url_for('login') }}" autocomplete="off">
+        <label class="field-label" for="pin">PIN</label>
+        <input class="input" type="password" id="pin" name="pin" inputmode="numeric" autofocus required>
+        {% if error %}
+          <p class="error-text">{{ error }}</p>
+        {% endif %}
+        <button type="submit" class="btn btn-primary btn-block">Unlock</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

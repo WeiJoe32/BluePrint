@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#081826">
+  <title>BluePrint</title>
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%230c2440"/><rect x="1.5" y="1.5" width="13" height="13" fill="none" stroke="%2386b8d8" stroke-width="0.6"/><path d="M3.5 13V3h6l3.5 3.5V13z" fill="none" stroke="%23ffd166" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.5 3v3.5h3.5" fill="none" stroke="%23ffd166" stroke-width="1.2" stroke-linejoin="round"/></svg>'>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="wrap" id="wrap">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20V4h9l7 7v9z"/>
+            <path d="M13 4v7h7"/>
+          </svg>
+        </div>
+        <span class="brand-name">BluePrint</span>
+      </div>
+      {% if stub_mode %}
+        <span class="stub-badge">Stub mode — no API calls</span>
+      {% endif %}
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         STATE 1 — UPLOAD
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="panel" id="state-upload">
+      <h1 class="panel-title">BluePrint</h1>
+      <p class="panel-subtitle">Photos &rarr; engineering drawing</p>
+
+      <div class="title-block" aria-hidden="true">
+        <span class="tb-cell"><b>Sheet</b> 1 / 1</span>
+        <span class="tb-cell"><b>Scale</b> NTS</span>
+        <span class="tb-cell"><b>Units</b> mm</span>
+        <span class="tb-cell tb-drawn"><b>Drawn</b> BluePrint AI</span>
+      </div>
+
+      <div class="stack" style="margin-top: 24px;">
+        <div class="field">
+          <span class="micro">Photos (1&ndash;4)</span>
+          <button type="button" class="dropzone" id="dropzone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <circle cx="8.5" cy="10" r="1.5"/>
+              <path d="m21 15-5-5-9 9"/>
+            </svg>
+            <span class="dropzone-label">Add photos</span>
+            <span class="dropzone-sub">JPG or PNG, up to 4 photos</span>
+          </button>
+          <input type="file" id="photo-input" accept="image/*" multiple hidden>
+          <p class="error-text hidden" id="photo-error"></p>
+          <div class="thumb-grid hidden" id="thumb-grid"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="description">Description (optional)</label>
+          <input class="input" type="text" id="description" placeholder="e.g. 3D printed bracket">
+        </div>
+
+        <div class="field">
+          <span class="micro">Known dimension</span>
+          <div class="dim-row">
+            <select class="input" id="dimension-label">
+              <option value="height">Height</option>
+              <option value="width">Width</option>
+              <option value="depth">Depth</option>
+              <option value="diameter">Diameter</option>
+              <option value="length">Length</option>
+              <option value="custom">Custom&hellip;</option>
+            </select>
+            <input class="input" type="number" id="dimension-value" min="0.1" step="0.1" placeholder="value">
+            <select class="input" id="dimension-unit">
+              <option value="mm" selected>mm</option>
+              <option value="cm">cm</option>
+              <option value="in">inch</option>
+            </select>
+          </div>
+          <input class="input hidden" type="text" id="dimension-custom-label" placeholder="Name this dimension" style="margin-top: 12px;">
+        </div>
+
+        <div class="field">
+          <span class="micro">Quality</span>
+          <div class="pill-group">
+            <label class="pill">
+              <input type="radio" name="quality" value="draft">
+              <span class="pill-face">Draft (Haiku)</span>
+            </label>
+            <label class="pill">
+              <input type="radio" name="quality" value="fast" checked>
+              <span class="pill-face">Fast (Sonnet)</span>
+            </label>
+            <label class="pill">
+              <input type="radio" name="quality" value="best">
+              <span class="pill-face">Best (Opus)</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="generate-btn" disabled>Generate drawing</button>
+
+        <p class="footnote">
+          Dimensions are proportional estimates anchored to your given dimension (&plusmn;10&ndash;20%). Unseen faces and internals are inferred. Verify with calipers before manufacturing.
+        </p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         STATE 2 — PROGRESS
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="panel hidden" id="state-progress">
+      <p class="progress-status" id="progress-status">Analyzing photos&hellip;</p>
+      <div class="progress-meta">
+        <span>Elapsed <b id="progress-elapsed">0s</b></span>
+        <span id="progress-chars-wrap" class="hidden">Generated <b id="progress-chars">0</b> chars</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <div class="progress-actions">
+        <button type="button" class="btn btn-ghost" id="cancel-btn">Cancel</button>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         STATE 3 — VIEWER
+         ══════════════════════════════════════════════════════════════════ -->
+    <section class="hidden" id="state-viewer">
+      <div class="viewer-toolbar">
+        <button type="button" class="icon-btn" id="zoom-out-btn" aria-label="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/></svg>
+        </button>
+        <span class="zoom-pct" id="zoom-pct">100%</span>
+        <button type="button" class="icon-btn" id="zoom-in-btn" aria-label="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>
+        </button>
+        <button type="button" class="icon-btn" id="zoom-reset-btn" aria-label="Reset zoom">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 21v-5h5"/></svg>
+        </button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-sm" id="print-btn">Print</button>
+        <button type="button" class="btn btn-sm" id="download-btn">Download SVG</button>
+        <button type="button" class="btn btn-sm btn-primary" id="new-drawing-btn">New drawing</button>
+      </div>
+      <div class="viewer-pane" id="viewer-pane">
+        <img id="drawing-img" alt="Generated engineering drawing">
+      </div>
+    </section>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
