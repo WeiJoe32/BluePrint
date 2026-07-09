@@ -80,10 +80,56 @@ Response: streamed NDJSON lines — `status` → `heartbeat`/`progress` → `don
 **Safety:** model SVG output is sanitized server-side (scripts/event handlers/external refs stripped via ElementTree) AND rendered client-side through `<img>` (browsers never execute scripts in SVG-in-img).
 
 ## Deploy (Render, dashboard-configured — no render.yaml)
-1. Push repo to GitHub (`WeiJoe32/BluePrint`) — confirm `.env` is NOT in the tree
-2. Render → New Web Service → connect repo → Python → build `pip install -r requirements.txt` → start from Procfile → Free tier
-3. Environment tab: `ANTHROPIC_API_KEY`, `APP_PIN`, `FLASK_SECRET_KEY` (long random), `SESSION_COOKIE_SECURE=true`
-4. Free-tier caveats: ~30–60s cold start after idle spin-down; auto-deploys on every push to main
+
+**GitHub: ✅ DONE 2026-07-09** → https://github.com/WeiJoe32/BluePrint (public, `main`).
+Verified at push time: `.env` never left the machine, no `sk-ant-` pattern in any pushed file. Only `.env.example` is in the repo.
+
+### ⬜ TODO — Render setup (~10 min, all in the browser)
+
+**Step 0 — generate a secret key.** In any terminal:
+```powershell
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+Copy the 64-character output. It only signs the login cookie — it just has to be unguessable. Do NOT reuse the fitness-tracker's.
+
+**Step 1 — create the service.** [render.com](https://render.com) → **New → Web Service** → connect GitHub repo `WeiJoe32/BluePrint`.
+
+| Setting | Value |
+|---|---|
+| Language / Runtime | Python 3 |
+| Branch | `main` |
+| Build command | `pip install -r requirements.txt` |
+| Start command | leave blank — auto-detected from `Procfile` |
+| Instance type | **Free** |
+
+**Step 2 — Environment tab, add 4 variables** (never commit these):
+
+| Key | Value |
+|---|---|
+| `ANTHROPIC_API_KEY` | your key — copy the line from `Fitness/fitness-tracker/.env` |
+| `APP_PIN` | any PIN you'll remember (this is the only thing guarding your API credits) |
+| `FLASK_SECRET_KEY` | the 64-char string from Step 0 |
+| `SESSION_COOKIE_SECURE` | `true` |
+
+Do **not** set `PORT` (Render injects it) and do **not** set `BLUEPRINT_STUB` (leave it off so real drawings generate).
+
+**Step 3 — Deploy**, then open the URL, log in with `APP_PIN`, and generate one real drawing to confirm end-to-end.
+
+**Step 4 — if something's wrong**, check the Render log:
+- `WARNING: missing env vars: ...` → a variable name is misspelled in Step 2
+- login page loops / won't stay logged in → `SESSION_COOKIE_SECURE` isn't `true`, or `FLASK_SECRET_KEY` is missing
+- 503 `not_configured` on Generate → `ANTHROPIC_API_KEY` not set
+- Every successful generation logs `[BluePrint] model=... input_tokens=... output_tokens=... stop_reason=...` — that's your cost check
+
+### Free-tier realities (verified 2026-07-09, see [[ROADMAP]])
+- Spins down after **15 min** idle → first request then takes **~60s** to wake. Not broken, just cold.
+- 750 instance-hours/month (one service fits comfortably).
+- **Ephemeral filesystem** — nothing written to disk survives a restart. Irrelevant today (app is stateless), but it's why the roadmap says never put SQLite here.
+- Auto-deploys on every push to `main`.
+
+### After deploy
+- Add the URL to `CLAUDE.md`'s GitHub list and to this file.
+- Roadmap item 1.5 (PWA + wake-on-open ping) is what makes the cold start tolerable at the workbench — good first improvement.
 
 ## Future Improvements
 Researched roadmap (4-agent fan-out, 2026-07-09) lives in [[ROADMAP]] (`ROADMAP.md`) — ranked Tier 1/2/3 improvements with evidence labels, sources, effort sizes, a skip-list of researched dead ends, and a suggested build order. **Future agents: start there, don't redo the research.** Headline: ArUco/credit-card reference scale detection gets ~2% dimensional error vs today's ±10–20%.
