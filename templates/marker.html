@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BluePrint scale marker</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #111;
+      background: #fff;
+      margin: 0;
+      padding: 32px;
+      line-height: 1.5;
+    }
+    .sheet { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    p { margin: 8px 0; }
+    .marker {
+      width: 50mm;
+      height: 50mm;
+      image-rendering: pixelated;
+      border: 1px solid #333;
+      display: block;
+      margin: 24px 0 8px;
+    }
+    .caption { font-size: 13px; color: #444; margin: 0 0 24px; }
+    .check-bar {
+      width: 100mm;
+      height: 8mm;
+      background: #000;
+    }
+    .check-label { font-size: 13px; color: #444; margin: 6px 0 24px; }
+    ol { padding-left: 20px; }
+    li { margin: 4px 0; }
+    button {
+      margin-top: 24px;
+      padding: 10px 20px;
+      font-size: 15px;
+      border: 0;
+      border-radius: 6px;
+      background: #1a56db;
+      color: #fff;
+      cursor: pointer;
+    }
+    @media print {
+      button { display: none; }
+      body { padding: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <h1>BluePrint scale marker</h1>
+    <p>Print this page, cut out the marker, and photograph it next to your part.
+       BluePrint reads it to measure real millimetres from your photo.</p>
+
+    <img class="marker" src="/static/img/aruco-0.png" alt="ArUco scale marker">
+    <p class="caption">This square must measure exactly 50 mm on each side.</p>
+
+    <div class="check-bar"></div>
+    <p class="check-label">This bar must measure exactly 100 mm —
+       print at 100% / Actual size (no "fit to page").</p>
+
+    <ol>
+      <li>Print at 100% scale, then check the bar above is 100 mm with a ruler.</li>
+      <li>Cut out the marker square.</li>
+      <li>Lay it flat beside the part, in the same plane as the face you photograph.</li>
+      <li>Shoot square-on (as perpendicular as possible) so the marker isn't skewed.</li>
+    </ol>
+
+    <button onclick="window.print()">Print</button>
+  </div>
+</body>
+</html>

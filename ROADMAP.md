@@ -12,6 +12,10 @@ aliases:
 
 # BluePrint — Researched Improvement Roadmap
 
+> **SHIPPED 2026-07-09 (v2, same-day upgrade sprint):** 1.1 ArUco scale detection (server-side OpenCV, `/api/detect-scale`, annotated photos, `/marker` printable page) · 1.2 2576px · 1.3 dimension snapping (prompt rules) · 1.4 capture coaching · 1.5 PWA + localStorage gallery + wake-on-open launch page · 1.6 effort medium on Fast · 2.1 refinement chat (`/api/refine`, 2 cache breakpoints, 8-turn cap, tier lock) · 2.2 DXF export (`dxf_export.py`, geometry group contract in SYSTEM_PROMPT). **2.4 (part-ID) and 2.3 (parametric SVG) intentionally not built.** Tier 3 untouched.
+>
+> **SHIPPED 2026-07-10 (v3, drawing-quality sprint — see "Drawing Quality research" below):** Q1 computed isometric (`iso_projection.py`) · Q2 fenced freehand iso · Q3 server-drawn sheet furniture (`sheet_compose.py`) · Q4 code-rendered detail views · Q5 "Review & fix" button (`/api/review`, resvg-py + bundled font, single round) · multi-dimension input (1–6, was 1). Real-photo validated on a 3D-printed IC chip across all 3 tiers (Haiku $0.04/28s, Sonnet $0.22/173s, Opus $0.63/279s) with markerless input. **Q6 (numeric plan-then-draw, few-shot exemplar) intentionally not built — flagged Contested/Plausible, left as a future A/B.** Marker-accuracy real-photo validation (the ~2% claim) still pending — every test so far has been markerless.
+
 > Produced 2026-07-09 by a 4-agent research fan-out (measurement accuracy, photo→CAD landscape, Claude API levers, export/ops), each with adversarial verification. **Every claim carries a label**: **Confirmed** = primary source or 2+ independent sources · **Plausible** = one credible source, unrefuted · **Contested** = sources disagree. Sources listed were actually fetched on the date shown.
 >
 > **For future agents:** pick an item, read its evidence, build it. No code was changed when this was written — the app works as documented in [[instruction-blueprint]]. Do NOT redo this research; do check dated facts (pricing, API limits) if months have passed.
@@ -82,6 +86,40 @@ If the photographed object IS a standard part (M5 bolt, 608 bearing), the right 
 Source (fetched 2026-07-09): getleo.ai blog (2025-07)
 
 ---
+
+## Drawing Quality research (added 2026-07-10, second 4-agent fan-out)
+
+> Trigger: Wei Jie judged the isometric views "shit" and detail views weak on the IC-chip test. Four agents researched fixes; findings converged independently. Key context: LLM spatial projection is a MEASURED weakness (models never pass 50% on global 3D form assembly, GeoGramBench arXiv:2505.17653; chain-of-thought makes spatial output WORSE, arXiv:2604.16060) — prompting cannot fix the iso view. Also: NO published benchmark exists for photo→multi-view engineering sheets; all findings are transfer.
+
+### Q1. Deterministic isometric from the geometry group — **Confirmed · M** — THE iso fix
+The model freehands 3D projection; code doesn't have to. `geo-front` outline + depth from `geo-side` → extrude → project with `x'=(x−z)cos30°, y'=y+(x+z)sin30°` → z-sort hidden-line removal → SVG. Pure numpy. Exact wherever the part is prismatic (brackets, plates, PCBs). Gate on "is this one clean extrusion?"; else fall back to Q2. Don't depend on pysometric (v0.0.2, dead) — borrow its z-order idea. Sources: compuphase.com/axometr.htm, ScienceDirect S0924013604007435, arXiv:2505.17653/2604.16060.
+
+### Q2. Fence the freehand iso NOW — **Confirmed · S** — ship regardless
+Pictorial views are OPTIONAL per drafting standards (ASME Y14.3 treats them as supplementary). Prompt: model must NOT draw an isometric; that sheet quadrant gets the computed iso (Q1) or a labeled photo thumbnail / "PICTORIAL VIEW OMITTED". Kills the visible defect immediately.
+
+### Q3. Server-drawn sheet furniture (skeleton fill) — **Confirmed direction · S** — 2 agents converged
+Border/zone-grid/title-block become a server-side SVG template; the model draws ONLY views+annotations into a declared content rect (bbox passed in prompt, output hard-clipped via clipPath). Removes the most repetitive failure surface, saves ~2–4K output tokens/drawing, guarantees perfect furniture. Complexity is the measured failure driver (Claude perceptual accuracy 80%→33% as SVG complexity rises, SVGenius arXiv:2506.03139) — shrinking the generation surface attacks it directly.
+
+### Q4. Deterministic detail views from the geometry group — **Confirmed · M** — THE detail-view fix
+Model emits a spec `{center, radius, scale, label}`; server clones the geometry subgroup, `translate+scale(2)`, `clipPath` to a circle, adds callout ring + leader + "DETAIL A (2:1)". Guaranteed geometrically faithful at exact ratio. Precedent: matplotlib's `indicate_inset_zoom`. Sources: MDN clipPath, matplotlib zoom_inset_axes, drawsvg.
+
+### Q5. "Review & fix" button (render-and-critique) — **Confirmed · M** — build user-triggered, SINGLE round
+Rasterize the SVG server-side, show the PNG back to the model, get bounded fixes. Works because a render is EXTERNAL ground truth (self-correction fails only when intrinsic — survey arXiv:2406.01297); closest analogue gained +6–11% (frontend-code loop with Claude, arXiv:2604.05839) but tokens explode 18× by round 3 → one round, user pays per click (~cost of a drawing). Critic catches gross defects (overlapping text, colliding views, off-sheet elements), NOT fine misalignment — ship as assist with before/after + accept/keep UI, allow "no defects found" (over-flagging is a documented failure mode, VISCO). **Rasterizer: resvg-py + a bundled .ttf font** (resvg uses no system fonts — without bundling one, all dimension text silently vanishes; cairosvg is a known Render deploy trap). Bounded edits per pass stabilize output (See-Say-Sorted arXiv:2508.15222).
+
+### Q6. Cheap A/B experiments — **Contested/Plausible · S each** — try, measure, don't assume
+- Numeric plan-then-draw contract (scale + per-view origins as comment before the SVG): fine-tuned gains were huge, prompt-only gains "marginal" (SGP-GenBench) — but a *numeric coordinate contract* ≠ prose CoT; free to A/B.
+- One gold exemplar sheet in the prompt (~10–15K tokens, cacheable): few-shot on code ≈ +5.7% and quality-sensitive; risk = model copies the exemplar's part — make it visibly a different part.
+
+### Quality skip-list (researched dead ends)
+| Idea | Why not |
+|---|---|
+| Prompting the model into correct isometric (construction rules, CoT) | Measured LLM weakness; CoT makes spatial output worse (**Confirmed**) |
+| Per-view decomposition (one call per view) | No evidence of gain; maximizes cross-view inconsistency; 3× cost (**Confirmed absence**) |
+| Auto-loop / multi-round refinement | 18× token growth by round 3; over-correction documented (**Confirmed**) |
+| Server auto-placement of dimensions | NP-hard (reduces to Partition); even commercial CAD overlaps. Model keeps placement judgment, code renders (**Confirmed**) |
+| FreeCAD TechDraw headless / CadQuery-build123d as sheet renderer | Qt-coupled / OpenCascade-heavy; no dimensions in export; nothing to feed a B-rep kernel (**Confirmed**) |
+| cairosvg / Playwright rasterizing on Render free | libcairo deploy failures / Chromium RAM (**Confirmed**) |
+| Fine-tuning a custom SVG model | The biggest lever in every paper, and completely out of scope for an API app (**Confirmed**) |
 
 ## Tier 3 — large effort / watch list
 

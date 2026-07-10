@@ -231,12 +231,6 @@ select.input:focus {
 }
 select.input option { background: var(--paper-raised); color: var(--ink); }
 
-.dim-row {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 90px;
-  gap: 10px;
-}
-
 /* ── Dropzone: a cut-out on the sheet ────────────────────────────────────── */
 
 .dropzone {
@@ -551,7 +545,8 @@ select.input option { background: var(--paper-raised); color: var(--ink); }
 
 @media print {
   body { background: #fff; }
-  .app-header, .viewer-toolbar, #state-upload, #state-progress { display: none !important; }
+  .app-header, .viewer-toolbar, #state-upload, #state-progress,
+  .refine-bar, .dxf-hint, #state-gallery, .toast, #review-panel { display: none !important; }
   .wrap { max-width: none; padding: 0; }
   .viewer-pane {
     border: none;
@@ -567,12 +562,406 @@ select.input option { background: var(--paper-raised); color: var(--ink); }
 
 @media (max-width: 560px) {
   .panel { padding: 22px 18px 26px; }
-  /* label spans the full width; value + unit sit together on the next row */
-  .dim-row { grid-template-columns: 1fr 90px; }
-  .dim-row > :first-child { grid-column: 1 / -1; }
   .pill-group { width: 100%; }
   .pill { flex: 1; }
   .pill-face { text-align: center; padding: 10px 8px; }
   .title-block .tb-drawn { margin-left: 0; }
   .viewer-toolbar { flex-wrap: wrap; }
+  .refine-controls { flex-direction: column; }
+  .gallery-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================================
+   NEW SECTION — v2 additions: scale detection, session lock, refinement chat,
+   gallery, DXF export, capture coaching, toast. Everything below extends the
+   cyanotype theme above; nothing above this line was restyled.
+   ========================================================================== */
+
+/* ── Header actions row (stub badge + gallery button) ────────────────────── */
+
+.header-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── Capture coaching block + marker link ─────────────────────────────────── */
+
+.tips-block {
+  border: 1px dashed var(--line-faint);
+  padding: 12px 14px;
+  margin-bottom: 2px;
+}
+.tips-title {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--line);
+  margin-bottom: 8px;
+}
+.tips-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.tips-list li::before { content: "\2013\0020"; color: var(--line); } /* – prefix */
+.marker-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent);
+}
+.marker-link:hover { color: var(--ink); border-color: var(--ink); }
+
+/* ── Thumbnail scale badges ───────────────────────────────────────────────── */
+
+.thumb-scale-badge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 3px 4px;
+  color: var(--ink);
+  background: rgba(8, 24, 38, .82);
+}
+.thumb-scale-badge.checking { color: var(--ink-dim); }
+.thumb-scale-badge.found { color: var(--accent-ink); background: var(--accent); font-weight: 700; }
+.thumb-scale-badge.warn { color: var(--paper-deep); background: var(--danger); font-weight: 700; }
+
+/* ── Locked quality pills (frozen once a session has a drawing) ──────────── */
+
+.pill.locked .pill-face { opacity: .45; cursor: not-allowed; }
+
+/* ── DXF export ────────────────────────────────────────────────────────────── */
+
+.dxf-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin: -6px 0 14px;
+}
+
+/* ── Refinement chat bar ──────────────────────────────────────────────────── */
+
+.refine-bar {
+  margin-bottom: 14px;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  padding: 12px 14px;
+}
+.refine-controls { display: flex; gap: 10px; }
+.refine-controls .refine-input { flex: 1; }
+.refine-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 9px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.refine-gallery-note {
+  margin-top: 9px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+.refine-progress { margin-top: 12px; }
+.refine-progress-status {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+}
+
+/* ── Gallery grid ──────────────────────────────────────────────────────────── */
+
+.gallery-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+  margin-top: 6px;
+}
+
+.gallery-card {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+}
+
+.gallery-thumb {
+  aspect-ratio: 4 / 3;
+  background: #fff;
+  border-bottom: 1px solid var(--line-faint);
+  overflow: hidden;
+}
+.gallery-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.gallery-info {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.gallery-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.gallery-name:hover { color: var(--accent); }
+.gallery-name-input {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--paper-raised);
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  color: var(--ink);
+  padding: 4px 6px;
+  width: 100%;
+}
+.gallery-date,
+.gallery-dim {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--ink-dim);
+}
+
+.gallery-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 14px;
+  margin-top: auto;
+}
+.gallery-actions .btn { flex: 1; }
+.gallery-delete:hover { border-color: var(--danger); color: var(--danger); }
+
+.gallery-empty {
+  text-align: center;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 70px 0;
+  border: 1.5px dashed var(--line-faint);
+}
+
+/* ── Toast (gallery-full, DXF errors) ─────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border: 1.5px solid var(--accent);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 12px 18px;
+  z-index: 50;
+  max-width: calc(100vw - 40px);
+  text-align: center;
+}
+.toast.toast-error { border-color: var(--danger); color: var(--danger); }
+
+/* ── Multi-dimension rows (1-6, dynamic) ──────────────────────────────────── */
+
+.dimension-unit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dimension-unit-row .unit-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.dimension-unit-row select { width: 90px; flex: none; }
+
+.dimension-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dimension-row {
+  border: 1px dashed var(--line-faint);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dimension-row-main {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 32px;
+  gap: 10px;
+  align-items: center;
+}
+
+.dim-remove-btn {
+  width: 32px;
+  height: 40px;
+  border: 1px solid var(--line-faint);
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dim-remove-btn:hover { background: var(--danger); color: var(--paper-deep); border-color: var(--danger); }
+/* first row's remove button carries .hidden (display:none) — the grid's fixed
+   32px third column keeps every row's inputs aligned regardless */
+
+.add-dimension-btn {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: transparent;
+  border: 1.5px dashed var(--accent);
+  padding: 9px 14px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.add-dimension-btn:hover:not(:disabled) { background: rgba(255, 209, 102, .08); }
+.add-dimension-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+  border-style: dotted;
+  color: var(--ink-dim);
+}
+
+/* ── Review & fix ──────────────────────────────────────────────────────────── */
+
+.review-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-faint);
+}
+.btn-review { border-color: var(--accent); color: var(--accent); }
+.btn-review:hover:not(:disabled) { background: rgba(255, 209, 102, .08); }
+.review-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.review-panel {
+  border: 1.5px solid var(--accent);
+  background: var(--paper);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.review-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.review-panel-title {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.review-close-btn { width: 28px; height: 28px; }
+.review-close-btn svg { width: 15px; height: 15px; }
+
+.review-defects {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.review-defects li { padding-left: 14px; position: relative; }
+.review-defects li::before {
+  content: "\2013";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.review-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.review-compare-col { display: flex; flex-direction: column; gap: 6px; }
+.review-compare-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.review-thumb {
+  aspect-ratio: 4 / 3;
+  background: #fff;
+  border: 1px solid var(--line-faint);
+  overflow: hidden;
+}
+.review-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.review-panel-actions { display: flex; gap: 10px; }
+.review-panel-actions .btn { flex: 1; }
+
+/* ── Mobile: dimension rows + review compare stack sanely ────────────────── */
+
+@media (max-width: 560px) {
+  .dimension-row-main { grid-template-columns: 1fr 32px; }
+  .dimension-row-main > :first-child { grid-column: 1 / -1; }
+  .review-compare { grid-template-columns: 1fr; }
+  .review-row { flex-wrap: wrap; }
 }

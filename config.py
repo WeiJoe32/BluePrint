@@ -35,6 +35,10 @@ MODEL_DRAFT = "claude-haiku-4-5"  # cheapest test drawings (no adaptive thinking
 MODEL_FAST = "claude-sonnet-5"    # good quality, moderate cost — the default
 MODEL_BEST = "claude-opus-4-8"    # highest-quality drawings
 MAX_IMAGES = 4                    # most photos accepted per request
+MARKER_SIZE_MM = 50               # printed ArUco scale marker edge length (mm)
+MARKER_DICT = "DICT_5X5_50"       # OpenCV ArUco dictionary the marker is drawn from
+MAX_REFINE_TURNS = 8              # most refinement rounds kept in one conversation
+MAX_DIMENSIONS = 6                # most known dimensions accepted per request
 
 
 def missing_required():

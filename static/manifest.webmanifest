@@ -1,0 +1,23 @@
+{
+  "name": "BluePrint",
+  "short_name": "BluePrint",
+  "start_url": "/static/launch.html",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#081826",
+  "background_color": "#081826",
+  "icons": [
+    {
+      "src": "/static/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
